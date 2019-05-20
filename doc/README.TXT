@@ -32,7 +32,7 @@ A. Distribution file
 	compilation-related files, and an advection example in
         C++, C, and Fortran) is available for Linux and Windows:
 
-        phreeqcrm-3.4.0-12927.tar.gz      
+        phreeqcrm-3.5.0-14000.tar.gz      
 
 
 -----------------------------------------------------------------------------------
@@ -95,15 +95,15 @@ C. Downloading and unzipping the distribution file
 
 	Steps in extracting files                   	Explanation
 	----------------------------------------    	-----------------------------------
-	gunzip phreeqcrm-3.4.0-12927.tar.gz	Uncompress the tar.gz file.
-	tar -xvpof phreeqcrm-3.4.0-12927.tar	Extract files from the tar file.
+	gunzip phreeqcrm-3.5.0-14000.tar.gz	Uncompress the tar.gz file.
+	tar -xvpof phreeqcrm-3.5.0-14000.tar	Extract files from the tar file.
 
-	The directory phreeqcrm-3.4.0-12927 is created when the files are
+	The directory phreeqcrm-3.5.0-14000 is created when the files are
 	extracted; if this directory already exists, you may want to delete or rename
 	it before extracting the files. The following directory structure is created 
 	(the contents of each directory are shown to the right):
 
-	phreeqcrm-3.4.0-12927			Source code and configure/CMake files
+	phreeqcrm-3.5.0-14000			Source code and configure/CMake files
 	     ./config        				More configure files
 	     ./database      				Database files for PHREEQC
 	     ./doc           				Documentation files 
@@ -128,7 +128,7 @@ D. Linux compiling, testing, and installing the PhreeqcRM library
 
   D.1.  Change directory to the directory that was extracted from the tar file.
 
-        cd phreeqcrm-3.4.0-12927
+        cd phreeqcrm-3.5.0-14000
         
   D.2.  Make a directory, for example, Release_openmp.
 	
@@ -265,7 +265,7 @@ E. Windows compiling, testing, and installing the PhreeqcRM library
 	
 	Open CMake. Fill in the top two lines.
 		Where is the source code: 
-			The top level directory (ie c:/phreeqcrm-3.4.0-12927).
+			The top level directory (ie c:/phreeqcrm-3.5.0-14000).
 		Where to build the binaries: 
 			A new directory. It is suggested that the name
 			of the directory include the characteristics of 
