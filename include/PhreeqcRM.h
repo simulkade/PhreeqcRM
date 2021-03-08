@@ -98,7 +98,7 @@ enum {
 } /* MPI_METHOD */;
 
 /**
- * @mainpage PhreeqcRM Library Documentation (3.5.0-14000)
+ * @mainpage PhreeqcRM Library Documentation (3.6.2-15100)
  *
  *  @htmlonly
  *  <table>

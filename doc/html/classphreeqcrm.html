@@ -196,8 +196,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abb4a42f306dccf2d63cbdae91e9d8ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdc4aed798c9a6753fccf4bd10b8af7c"><td class="memItemLeft" align="right" valign="top">integer function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphreeqcrm.html#acdc4aed798c9a6753fccf4bd10b8af7c">RM_RunFile</a> (id, workers, initial_phreeqc, utility, chem_name)</td></tr>
 <tr class="separator:acdc4aed798c9a6753fccf4bd10b8af7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6045cbc4330a6664e5a7da7bc0268293"><td class="memItemLeft" align="right" valign="top">integer function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphreeqcrm.html#a6045cbc4330a6664e5a7da7bc0268293">RM_RunString</a> (id, initial_phreeqc, workers, utility, input_string)</td></tr>
-<tr class="separator:a6045cbc4330a6664e5a7da7bc0268293"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4941a77c2c4fb053ac396a777d313803"><td class="memItemLeft" align="right" valign="top">integer function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphreeqcrm.html#a4941a77c2c4fb053ac396a777d313803">RM_RunString</a> (id, workers, initial_phreeqc, utility, input_string)</td></tr>
+<tr class="separator:a4941a77c2c4fb053ac396a777d313803"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab5715b1f7f89b4c5b62d94957e02cc7"><td class="memItemLeft" align="right" valign="top">integer function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphreeqcrm.html#aab5715b1f7f89b4c5b62d94957e02cc7">RM_ScreenMessage</a> (id, str)</td></tr>
 <tr class="separator:aab5715b1f7f89b4c5b62d94957e02cc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82ad32c579ab77ab4fde45b205651167"><td class="memItemLeft" align="right" valign="top">integer function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphreeqcrm.html#a82ad32c579ab77ab4fde45b205651167">RM_SetComponentH2O</a> (id, tf)</td></tr>
@@ -3720,7 +3720,7 @@ logical&#160;</td><td class="memItemRight" valign="bottom"><b>rmf_debug</b> =.tr
       </table>
 </div><div class="memdoc">
 
-<p>Transfer solutions and reactants from the InitialPhreeqc instance to the reaction-module workers, possibly with mixing. In its simplest form, <em>ic1</em> is used to select initial conditions, including solutions and reactants, for each cell of the model, without mixing. <em>ic1</em> is dimensioned (<em>nxyz</em>, 7), where <em>nxyz</em> is the number of grid cells in the user's model (<a class="el" href="classphreeqcrm.html#a9bc56fa15fc1608521c75d748129e07b">RM_GetGridCellCount</a>). The dimension of 7 refers to solutions and reactants in the following order: (1) SOLUTIONS, (2) EQUILIBRIUM_PHASES, (3) EXCHANGE, (4) SURFACE, (5) GAS_PHASE, (6) SOLID_SOLUTIONS, and (7) KINETICS. In Fortran, ic1(100, 4) = 2, indicates that cell 99 (0 based) contains the SURFACE definition with user number 2 that has been defined in the InitialPhreeqc instance (either by <a class="el" href="classphreeqcrm.html#acdc4aed798c9a6753fccf4bd10b8af7c">RM_RunFile</a> or <a class="el" href="classphreeqcrm.html#a6045cbc4330a6664e5a7da7bc0268293">RM_RunString</a>). <br />
+<p>Transfer solutions and reactants from the InitialPhreeqc instance to the reaction-module workers, possibly with mixing. In its simplest form, <em>ic1</em> is used to select initial conditions, including solutions and reactants, for each cell of the model, without mixing. <em>ic1</em> is dimensioned (<em>nxyz</em>, 7), where <em>nxyz</em> is the number of grid cells in the user's model (<a class="el" href="classphreeqcrm.html#a9bc56fa15fc1608521c75d748129e07b">RM_GetGridCellCount</a>). The dimension of 7 refers to solutions and reactants in the following order: (1) SOLUTIONS, (2) EQUILIBRIUM_PHASES, (3) EXCHANGE, (4) SURFACE, (5) GAS_PHASE, (6) SOLID_SOLUTIONS, and (7) KINETICS. In Fortran, ic1(100, 4) = 2, indicates that cell 99 (0 based) contains the SURFACE definition with user number 2 that has been defined in the InitialPhreeqc instance (either by <a class="el" href="classphreeqcrm.html#acdc4aed798c9a6753fccf4bd10b8af7c">RM_RunFile</a> or <a class="el" href="classphreeqcrm.html#a4941a77c2c4fb053ac396a777d313803">RM_RunString</a>). <br />
 <br />
  It is also possible to mix solutions and reactants to obtain the initial conditions for cells. For mixing, <em>ic2</em> contains numbers for a second entity that mixes with the entity defined in <em>ic1</em>. <em>F1</em> contains the mixing fraction for <em>ic1</em>, whereas (1 - <em>f1</em>) is the mixing fraction for <em>ic2</em>. In Fortran, ic1(100, 4) = 2, initial_conditions2(100, 4) = 3, f1(100, 4) = 0.25 indicates that cell 99 (0 based) contains a mixture of 0.25 SURFACE 2 and 0.75 SURFACE 3, where the surface compositions have been defined in the InitialPhreeqc instance. If the user number in <em>ic2</em> is negative, no mixing occurs. If <em>ic2</em> and <em>f1</em> are omitted, no mixing is used, and initial conditions are derived solely from <em>ic1</em>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -4311,7 +4311,7 @@ logical&#160;</td><td class="memItemRight" valign="bottom"><b>rmf_debug</b> =.tr
   </table>
   </dd>
 </dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classphreeqcrm.html#a6045cbc4330a6664e5a7da7bc0268293">RM_RunString</a>. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classphreeqcrm.html#a4941a77c2c4fb053ac396a777d313803">RM_RunString</a>. </dd></dl>
 <dl class="section user"><dt>Fortran Example:</dt><dd> 
  <CODE>
  <PRE>
@@ -4323,7 +4323,7 @@ logical&#160;</td><td class="memItemRight" valign="bottom"><b>rmf_debug</b> =.tr
 
 </div>
 </div>
-<a class="anchor" id="a6045cbc4330a6664e5a7da7bc0268293"></a>
+<a class="anchor" id="a4941a77c2c4fb053ac396a777d313803"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -4337,13 +4337,13 @@ logical&#160;</td><td class="memItemRight" valign="bottom"><b>rmf_debug</b> =.tr
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">integer, intent(in)&#160;</td>
-          <td class="paramname"><em>initial_phreeqc</em>, </td>
+          <td class="paramname"><em>workers</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">integer, intent(in)&#160;</td>
-          <td class="paramname"><em>workers</em>, </td>
+          <td class="paramname"><em>initial_phreeqc</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -5172,7 +5172,7 @@ logical&#160;</td><td class="memItemRight" valign="bottom"><b>rmf_debug</b> =.tr
       </table>
 </div><div class="memdoc">
 
-<p>Setting to enable or disable printing detailed output from reaction calculations to the output file for a set of cells defined by <a class="el" href="classphreeqcrm.html#a07fe4963bfbfba5d9c23fef516cc7dad">RM_SetPrintChemistryMask</a>. The detailed output prints all of the output typical of a PHREEQC reaction calculation, which includes solution descriptions and the compositions of all other reactants. The output can be several hundred lines per cell, which can lead to a very large output file (prefix.chem.txt, <a class="el" href="classphreeqcrm.html#a06f0087f5586079bfc89483489f23af3">RM_OpenFiles</a>). For the worker instances, the output can be limited to a set of cells (<a class="el" href="classphreeqcrm.html#a07fe4963bfbfba5d9c23fef516cc7dad">RM_SetPrintChemistryMask</a>) and, in general, the amount of information printed can be limited by use of options in the PRINT data block of PHREEQC (applied by using <a class="el" href="classphreeqcrm.html#acdc4aed798c9a6753fccf4bd10b8af7c">RM_RunFile</a> or <a class="el" href="classphreeqcrm.html#a6045cbc4330a6664e5a7da7bc0268293">RM_RunString</a>). Printing the detailed output for the workers is generally used only for debugging, and PhreeqcRM will run significantly faster when printing detailed output for the workers is disabled. </p>
+<p>Setting to enable or disable printing detailed output from reaction calculations to the output file for a set of cells defined by <a class="el" href="classphreeqcrm.html#a07fe4963bfbfba5d9c23fef516cc7dad">RM_SetPrintChemistryMask</a>. The detailed output prints all of the output typical of a PHREEQC reaction calculation, which includes solution descriptions and the compositions of all other reactants. The output can be several hundred lines per cell, which can lead to a very large output file (prefix.chem.txt, <a class="el" href="classphreeqcrm.html#a06f0087f5586079bfc89483489f23af3">RM_OpenFiles</a>). For the worker instances, the output can be limited to a set of cells (<a class="el" href="classphreeqcrm.html#a07fe4963bfbfba5d9c23fef516cc7dad">RM_SetPrintChemistryMask</a>) and, in general, the amount of information printed can be limited by use of options in the PRINT data block of PHREEQC (applied by using <a class="el" href="classphreeqcrm.html#acdc4aed798c9a6753fccf4bd10b8af7c">RM_RunFile</a> or <a class="el" href="classphreeqcrm.html#a4941a77c2c4fb053ac396a777d313803">RM_RunString</a>). Printing the detailed output for the workers is generally used only for debugging, and PhreeqcRM will run significantly faster when printing detailed output for the workers is disabled. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">id</td><td>The instance <em>id</em> returned from <a class="el" href="classphreeqcrm.html#ad635fa2a03bb95542cf6579b47b5d696">RM_Create</a>. </td></tr>
@@ -6282,7 +6282,7 @@ logical&#160;</td><td class="memItemRight" valign="bottom"><b>rmf_debug</b> =.tr
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Feb 14 2019 12:27:57 for PhreeqcRM by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Feb 4 2020 10:32:47 for PhreeqcRM by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.8
 </small></address>
