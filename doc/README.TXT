@@ -32,7 +32,7 @@ A. Distribution file
 	compilation-related files, and an advection example in
         C++, C, and Fortran) is available for Linux and Windows:
 
-        phreeqcrm-3.6.2-15100.tar.gz      
+        phreeqcrm-3.7.0-15749.tar.gz      
 
 
 -----------------------------------------------------------------------------------
@@ -95,15 +95,15 @@ C. Downloading and unzipping the distribution file
 
 	Steps in extracting files                   	Explanation
 	----------------------------------------    	-----------------------------------
-	gunzip phreeqcrm-3.6.2-15100.tar.gz	Uncompress the tar.gz file.
-	tar -xvpof phreeqcrm-3.6.2-15100.tar	Extract files from the tar file.
+	gunzip phreeqcrm-3.7.0-15749.tar.gz	Uncompress the tar.gz file.
+	tar -xvpof phreeqcrm-3.7.0-15749.tar	Extract files from the tar file.
 
-	The directory phreeqcrm-3.6.2-15100 is created when the files are
+	The directory phreeqcrm-3.7.0-15749 is created when the files are
 	extracted; if this directory already exists, you may want to delete or rename
 	it before extracting the files. The following directory structure is created 
 	(the contents of each directory are shown to the right):
 
-	phreeqcrm-3.6.2-15100			Source code and configure/CMake files
+	phreeqcrm-3.7.0-15749			Source code and configure/CMake files
 	     ./config        				More configure files
 	     ./database      				Database files for PHREEQC
 	     ./doc           				Documentation files 
@@ -128,7 +128,7 @@ D. Linux compiling, testing, and installing the PhreeqcRM library
 
   D.1.  Change directory to the directory that was extracted from the tar file.
 
-        cd phreeqcrm-3.6.2-15100
+        cd phreeqcrm-3.7.0-15749
         
   D.2.  Make a directory, for example, Release_openmp.
 	
@@ -227,6 +227,8 @@ D. Linux compiling, testing, and installing the PhreeqcRM library
 	Databases: 
 		/usr/local/share/doc/phreeqcrm/database              Phreeqc databases
 			Amm.dat
+			ColdChem.dat
+			core10.dat
 			frezchem.dat
 			iso.dat
 			llnl.dat
@@ -235,6 +237,7 @@ D. Linux compiling, testing, and installing the PhreeqcRM library
 			phreeqc.dat
 			pitzer.dat
 			sit.dat
+			Tipping_Hurley.dat
 			wateq4f.dat
 			
 	Fortran interfaces
@@ -265,7 +268,7 @@ E. Windows compiling, testing, and installing the PhreeqcRM library
 	
 	Open CMake. Fill in the top two lines.
 		Where is the source code: 
-			The top level directory (ie c:/phreeqcrm-3.6.2-15100).
+			The top level directory (ie c:/phreeqcrm-3.7.0-15749).
 		Where to build the binaries: 
 			A new directory. It is suggested that the name
 			of the directory include the characteristics of 

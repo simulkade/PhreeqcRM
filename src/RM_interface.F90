@@ -22,6 +22,13 @@
     PRIVATE :: Chk_GetConcentrations
     PRIVATE :: Chk_GetDensity
     PRIVATE :: Chk_GetEndCell
+    PRIVATE :: Chk_GetGasCompMoles
+    PRIVATE :: Chk_GetGasCompPressures
+    PRIVATE :: Chk_GetGasCompPhi
+    PRIVATE :: Chk_GetGasPhaseVolume
+    PRIVATE :: Chk_SetGasCompMoles
+    PRIVATE :: Chk_SetGasPhaseVolume
+    PRIVATE :: Chk_GetSpeciesLog10Molalities
     PRIVATE :: Chk_GetGfw
     PRIVATE :: Chk_GetSaturation
     PRIVATE :: Chk_GetSelectedOutput
@@ -47,6 +54,11 @@
     PRIVATE :: Chk_Double2D
     PRIVATE :: Chk_Integer1D
     PRIVATE :: Chk_Integer2D
+    PRIVATE :: RMF_debug
+#ifdef SKIP    
+    PRIVATE :: RM_SETCONCENTRATIONS1D
+#endif   
+    
     CONTAINS
     
 !> Abort the program. 
@@ -507,36 +519,37 @@ END FUNCTION RM_ErrorMessage
 !> @ref RM_GetSpeciesCount, 
 !> @ref RM_GetSpeciesD25,
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName,   
 !> @ref RM_GetSpeciesZ, 
 !> @ref RM_SetComponentH2O. 
 !> @ref RM_SetSpeciesSaveOn, 
 !> @ref RM_SpeciesConcentrations2Module.
-!> @par The @ref RM_FindComponents method also generates lists of reactants--equilibrium phases,
+!> @par The RM_FindComponents method also generates lists of reactants--equilibrium phases,
 !> exchangers, gas components, kinetic reactants, solid solution components, and surfaces. 
 !> The lists are cumulative, including all reactants that were
-!> defined in the initial phreeqc instance at any time FindComponents was called.
+!> defined in the initial phreeqc instance at any time RM_FindComponents was called.
 !> In addition, a list of phases is generated for which saturation indices may be calculated from the
 !> cumulative list of components.
 !> @see also
-!> @ref RM_GetEquilibriumPhases,
+!> @ref RM_GetEquilibriumPhasesName,
 !> @ref RM_GetEquilibriumPhasesCount,
-!> @ref RM_GetExchangeNames,
-!> @ref RM_GetExchangeSpecies,
+!> @ref RM_GetExchangeName,
+!> @ref RM_GetExchangeSpeciesName,
 !> @ref RM_GetExchangeSpeciesCount,
-!> @ref RM_GetGasComponents,
+!> @ref RM_GetGasComponentsName,
 !> @ref RM_GetGasComponentsCount,
-!> @ref RM_GetKineticReactions,
+!> @ref RM_GetKineticReactionsName,
 !> @ref RM_GetKineticReactionsCount,
 !> @ref RM_GetSICount,
-!> @ref RM_GetSINames,
-!> @ref RM_GetSolidSolutionComponents,
+!> @ref RM_GetSIName,
+!> @ref RM_GetSolidSolutionComponentsName,
 !> @ref RM_GetSolidSolutionComponentsCount,
-!> @ref RM_GetSolidSolutionNames,
-!> @ref RM_GetSurfaceNames,
-!> @ref RM_GetSurfaceSpecies,
+!> @ref RM_GetSolidSolutionName,
+!> @ref RM_GetSurfaceName,
+!> @ref RM_GetSurfaceSpeciesName,
 !> @ref RM_GetSurfaceSpeciesCount,
-!> @ref RM_GetSurfaceTypes.
+!> @ref RM_GetSurfaceType.
 !> @par Fortran Example:
 !> @htmlonly
 !> <CODE>
@@ -1356,6 +1369,270 @@ INTEGER FUNCTION RM_GetGasComponentsName(id, num, name)
     RM_GetGasComponentsName = RMF_GetGasComponentsName(id, num, name, len(name))
     return
 END FUNCTION RM_GetGasComponentsName 
+
+!> Transfer moles of gas components from each reaction cell 
+!> to the array given in the argument list (@a gas_moles).
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param gas_moles        Array to receive the moles of gas components for each cell. 
+!> Dimension of the array is (@a nxyz, @a ngas_comps),
+!> where @a nxyz is the number of user grid cells and @a ngas_comps is the result 
+!> of @ref RM_GetGasComponentsCount. If a gas component is not defined for a cell, 
+!> the number of moles is set to -1. Values for inactive cells are set to 1e30.
+!> 
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> 
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetGasComponentsCount,
+!> @ref RM_GetGasCompPressures,
+!> @ref RM_GetGasCompPhi,
+!> @ref RM_GetGasPhaseVolume,
+!> @ref RM_SetGasCompMoles,
+!> @ref RM_SetGasPhaseVolume.
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> ngas_comps = RM_GetGasComponentsCount(id)
+!> allocate(gas_moles(nxyz, ngas_comps))
+!> status = RM_RunCells(id)
+!> status = RM_GetGasCompMoles(id, gas_moles)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_GetGasCompMoles(id, gas_moles) 
+    USE ISO_C_BINDING  
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_GetGasCompMoles(id, gas_moles) &
+            BIND(C, NAME='RMF_GetGasCompMoles')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(out)  :: gas_moles(*)
+        END FUNCTION RMF_GetGasCompMoles 
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(out), DIMENSION(:,:), TARGET :: gas_moles
+    if (rmf_debug) call Chk_GetGasCompMoles(id, gas_moles)  
+    RM_GetGasCompMoles = RMF_GetGasCompMoles(id, gas_moles) 
+    return
+END FUNCTION RM_GetGasCompMoles         
+
+SUBROUTINE Chk_GetGasCompMoles(id, gas_moles)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:,:) :: gas_moles
+    INTEGER :: errors, rmf_ngas_comps
+    errors = 0
+	rmf_ngas_comps = RM_GetGasComponentsCount(id)
+    errors = errors + Chk_Double2D(id, gas_moles, rmf_nxyz, rmf_ngas_comps, "gas_moles", "RM_GetGasCompMoles")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument(s) in RM_GetGasCompMoles")
+    endif
+END SUBROUTINE Chk_GetGasCompMoles
+
+!> Transfer pressures of gas components from each reaction cell 
+!> to the array given in the argument list (@a gas_p).
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param gas_p        Array to receive the moles of gas components for each cell. 
+!> Dimension of the array is (@a nxyz, @a ngas_comps),
+!> where @a nxyz is the number of user grid cells and @a ngas_comps is the result 
+!> of @ref RM_GetGasComponentsCount. If a gas component is not defined for a cell, 
+!> the pressure is set to -1. Values for inactive cells are set to 1e30.
+!> Values for inactive cells are set to 1e30.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> 
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetGasComponentsCount,
+!> @ref RM_GetGasCompMoles,
+!> @ref RM_GetGasCompPhi,
+!> @ref RM_GetGasPhaseVolume,
+!> @ref RM_SetGasCompMoles,
+!> @ref RM_SetGasPhaseVolume.
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> ngas_comps = RM_GetGasComponentsCount(id)
+!> allocate(gas_p(nxyz, ngas_comps))
+!> status = RM_RunCells(id)
+!> status = RM_GetGasCompPressures(id, gas_p)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_GetGasCompPressures(id, gas_p) 
+    USE ISO_C_BINDING  
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_GetGasCompPressures(id, gas_p) &
+            BIND(C, NAME='RMF_GetGasCompPressures')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(out)  :: gas_p(*)
+        END FUNCTION RMF_GetGasCompPressures 
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(out), DIMENSION(:,:), TARGET :: gas_p
+    if (rmf_debug) call Chk_GetGasCompPressures(id, gas_p)  
+    RM_GetGasCompPressures = RMF_GetGasCompPressures(id, gas_p ) 
+    return
+END FUNCTION RM_GetGasCompPressures         
+
+SUBROUTINE Chk_GetGasCompPressures(id, gas_p)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:,:) :: gas_p
+    INTEGER :: errors, rmf_ngas_comps
+    errors = 0
+	rmf_ngas_comps = RM_GetGasComponentsCount(id)
+    errors = errors + Chk_Double2D(id, gas_p, rmf_nxyz, rmf_ngas_comps, "gas_pressure", "RM_GetGasCompPressures")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument(s) in RM_GetGasCompPressures")
+    endif
+END SUBROUTINE Chk_GetGasCompPressures
+
+!> Transfer fugacity coefficients (phi) of gas components from each reaction cell 
+!> to the array given in the argument list (@a gas_phi). Fugacity of a gas component
+!> is equal to the pressure of the component times the fugacity coefficient.
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param gas_phi        Array to receive the fugacity coefficients 
+!> of gas components for each cell. 
+!> Dimension of the array is (@a nxyz, @a ngas_comps),
+!> where @a nxyz is the number of user grid cells and @a ngas_comps is the result 
+!> of @ref RM_GetGasComponentsCount. If a gas component is not defined for a cell, 
+!> the fugacity coefficient is set to -1. Values for inactive cells are set to 1e30.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> 
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetGasComponentsCount,
+!> @ref RM_GetGasCompMoles,
+!> @ref RM_GetGasCompPressures,
+!> @ref RM_GetGasPhaseVolume,
+!> @ref RM_SetGasCompMoles,
+!> @ref RM_SetGasPhaseVolume.
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> ngas_comps = RM_GetGasComponentsCount(id)
+!> allocate(gas_phi(nxyz, ngas_comps))
+!> status = RM_RunCells(id)
+!> status = RM_GetGasCompPhi(id, gas_phi)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_GetGasCompPhi(id, gas_phi) 
+    USE ISO_C_BINDING  
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_GetGasCompPhi(id, gas_phi) &
+            BIND(C, NAME='RMF_GetGasCompPhi')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(out)  :: gas_phi(*)
+        END FUNCTION RMF_GetGasCompPhi 
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(out), DIMENSION(:,:), TARGET :: gas_phi
+    if (rmf_debug) call Chk_GetGasCompPhi(id, gas_phi)  
+    RM_GetGasCompPhi = RMF_GetGasCompPhi(id, gas_phi) 
+    return
+END FUNCTION RM_GetGasCompPhi         
+
+SUBROUTINE Chk_GetGasCompPhi(id, gas_phi)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:,:) :: gas_phi
+    INTEGER :: errors, rmf_ngas_comps
+    errors = 0
+	rmf_ngas_comps = RM_GetGasComponentsCount(id)
+    errors = errors + Chk_Double2D(id, gas_phi, rmf_nxyz, rmf_ngas_comps, "gas_phi", "RM_GetGasCompPhi")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument(s) in RM_GetGasCompPhi")
+    endif
+END SUBROUTINE Chk_GetGasCompPhi
+
+!> Transfer volume of gas from each reaction cell
+!> to the vector given in the argument list (@a gas_volume).
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param gas_volume        Array to receive the gas phase volumes.
+!> Dimension of the array must be @a nxyz,
+!> where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+!> If a gas phase is not defined for a cell, the volume is set to -1.
+!> Values for inactive cells are set to 1e30.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> 
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetGasComponentsCount,
+!> @ref RM_GetGasCompMoles,
+!> @ref RM_GetGasCompPhi,
+!> @ref RM_GetGasCompPressures,
+!> @ref RM_SetGasCompMoles
+!> @ref RM_SetGasPhaseVolume.
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> ngas_comps = RM_GetGasComponentsCount(id)
+!> allocate(gas_volume(nxyz, ngas_comps))
+!> status = RM_RunCells(id)
+!> status = RM_GetGasPhaseVolume(id, gas_volume)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_GetGasPhaseVolume(id, gas_volume) 
+    USE ISO_C_BINDING  
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_GetGasPhaseVolume(id, gas_volume) &
+            BIND(C, NAME='RMF_GetGasPhaseVolume')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(out)  :: gas_volume(*)
+        END FUNCTION RMF_GetGasPhaseVolume 
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(out), DIMENSION(:), TARGET :: gas_volume
+    if (rmf_debug) call Chk_GetGasPhaseVolume(id, gas_volume)  
+    RM_GetGasPhaseVolume = RMF_GetGasPhaseVolume(id, gas_volume) 
+    return
+END FUNCTION RM_GetGasPhaseVolume         
+
+SUBROUTINE Chk_GetGasPhaseVolume(id, gas_volume)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:) :: gas_volume
+    INTEGER :: errors, rmf_ngas_comps
+    errors = 0
+	rmf_ngas_comps = RM_GetGasComponentsCount(id)
+    errors = errors + Chk_Double1D(id, gas_volume, rmf_nxyz, "gas_volume", "RM_GetGasPhaseVolume")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument(s) in RM_GetGasPhaseVolume")
+    endif
+END SUBROUTINE Chk_GetGasPhaseVolume
 
 !> Returns the gram formula weights (g/mol) for the components in the reaction-module component list.
 !> @param id               The instance id returned from @ref RM_Create.
@@ -2348,6 +2625,7 @@ END SUBROUTINE Chk_GetSolutionVolume
 !> @ref RM_GetSpeciesCount, 
 !> @ref RM_GetSpeciesD25, 
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName,
 !> @ref RM_GetSpeciesSaveOn, 
 !> @ref RM_GetSpeciesZ,  
@@ -2416,6 +2694,7 @@ END SUBROUTINE Chk_GetSpeciesConcentrations
 !> @ref RM_GetSpeciesConcentrations, 
 !> @ref RM_GetSpeciesD25,
 !> @ref RM_GetSpeciesLog10Gammas, 
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName, 
 !> @ref RM_GetSpeciesSaveOn, 
 !> @ref RM_GetSpeciesZ,
@@ -2471,6 +2750,7 @@ END FUNCTION RM_GetSpeciesCount
 !> @ref RM_GetSpeciesConcentrations, 
 !> @ref RM_GetSpeciesCount, 
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName,
 !> @ref RM_GetSpeciesSaveOn,
 !> @ref RM_GetSpeciesZ,  
@@ -2542,6 +2822,7 @@ END SUBROUTINE Chk_GetSpeciesD25
 !> @ref RM_GetSpeciesConcentrations,
 !> @ref RM_GetSpeciesCount, 
 !> @ref RM_GetSpeciesD25, 
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName,
 !> @ref RM_GetSpeciesSaveOn, 
 !> @ref RM_GetSpeciesZ,  
@@ -2590,13 +2871,86 @@ SUBROUTINE Chk_GetSpeciesLog10Gammas(id, species_log10gammas)
     INTEGER :: errors, nspecies
     nspecies = RM_GetSpeciesCount(id)
     errors = 0
-    errors = errors + Chk_Double2D(id, species_log10gammas, rmf_nxyz, nspecies, "species concentration", &
-         "RM_GetSpeciesConcentrations")
+    errors = errors + Chk_Double2D(id, species_log10gammas, rmf_nxyz, nspecies, "species gammas", &
+         "RM_GetSpeciesLog10Gammas")
     if (errors .gt. 0) then
-        errors = RM_Abort(id, -3, "Invalid argument in RM_GetSpeciesConcentrations")
+        errors = RM_Abort(id, -3, "Invalid argument in RM_GetSpeciesLog10Gammas")
     endif
 END SUBROUTINE Chk_GetSpeciesLog10Gammas
 
+!> Transfer log10 aqueous-species log10 molalities to the array argument (@a species_log10molalities)
+!> To use this method @ref RM_SetSpeciesSaveOn must be set to @a true.
+!> The list of aqueous
+!> species is determined by @ref RM_FindComponents and includes all
+!> aqueous species that can be made from the set of components.
+!> 
+!> @param id                   The instance @a id returned from @ref RM_Create.
+!> @param species_log10molalities  Array to receive the aqueous species molalities. 
+!> Dimension of the array is (@a nxyz, @a nspecies),
+!> where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount), 
+!> and @a nspecies is the number of aqueous species (@ref RM_GetSpeciesCount).
+!> Values for inactive cells are set to 1e30.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetSpeciesConcentrations,
+!> @ref RM_GetSpeciesCount, 
+!> @ref RM_GetSpeciesD25, 
+!> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesName,
+!> @ref RM_GetSpeciesSaveOn, 
+!> @ref RM_GetSpeciesZ,  
+!> @ref RM_SetSpeciesSaveOn,
+!> @ref RM_SpeciesConcentrations2Module.
+!> 
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> status = RM_SetSpeciesSaveOn(id, 1)
+!> ncomps = RM_FindComponents(id)
+!> nspecies = RM_GetSpeciesCount(id)
+!> nxyz = RM_GetGridCellCount(id)
+!> allocate(species_log10molalities(nxyz, nspecies))
+!> status = RM_RunCells(id)
+!> status = RM_GetSpeciesLog10Molalities(id, species_log10molalites)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_GetSpeciesLog10Molalities(id, species_log10molalities) 
+    USE ISO_C_BINDING  
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_GetSpeciesLog10Molalities(id, species_log10molalities) &
+            BIND(C, NAME='RMF_GetSpeciesLog10Molalities')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(out) :: species_log10molalities(*)
+        END FUNCTION RMF_GetSpeciesLog10Molalities 
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(out), DIMENSION(:,:) :: species_log10molalities
+    if (rmf_debug) call Chk_GetSpeciesLog10Molalities(id, species_log10molalities)
+    RM_GetSpeciesLog10Molalities = RMF_GetSpeciesLog10Molalities(id, species_log10molalities)
+END FUNCTION RM_GetSpeciesLog10Molalities
+
+SUBROUTINE Chk_GetSpeciesLog10Molalities(id, species_log10molalities)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:,:) :: species_log10molalities
+    INTEGER :: errors, nspecies
+    nspecies = RM_GetSpeciesCount(id)
+    errors = 0
+    errors = errors + Chk_Double2D(id, species_log10molalities, rmf_nxyz, nspecies, "species molalities", &
+         "RM_GetSpeciesLog10Molalities")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument in RM_GetSpeciesLog10Molalities")
+    endif
+END SUBROUTINE Chk_GetSpeciesLog10Molalities
 
 !> Transfers the name of the @a ith aqueous species to the character argument (@a name).
 !> This method is intended for use with multicomponent-diffusion transport calculations,
@@ -2615,6 +2969,7 @@ END SUBROUTINE Chk_GetSpeciesLog10Gammas
 !> @ref RM_GetSpeciesCount,
 !> @ref RM_GetSpeciesD25, 
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesSaveOn,
 !> @ref RM_GetSpeciesZ, 
 !> @ref RM_SetSpeciesSaveOn,
@@ -2670,6 +3025,7 @@ END FUNCTION RM_GetSpeciesName
 !> @ref RM_GetSpeciesCount,
 !> @ref RM_GetSpeciesD25, 
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName,
 !> @ref RM_GetSpeciesZ, 
 !> @ref RM_SetSpeciesSaveOn,
@@ -2721,6 +3077,7 @@ END FUNCTION RM_GetSpeciesSaveOn
 !> @ref RM_GetSpeciesCount,
 !> @ref RM_GetSpeciesD25, 
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName, 
 !> @ref RM_GetSpeciesSaveOn, 
 !> @ref RM_SetSpeciesSaveOn,
@@ -4306,7 +4663,43 @@ INTEGER FUNCTION RM_SetErrorHandlerMode(id, mode)
     INTEGER, INTENT(in) :: mode
     RM_SetErrorHandlerMode = RMF_SetErrorHandlerMode(id, mode)
 END FUNCTION RM_SetErrorHandlerMode        
+!> Set the property that controls whether error messages are generated and displayed.
+!> Messages include PHREEQC "ERROR" messages, and
+!> any messages written with @ref RM_ErrorMessage.
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param tf  @a 1, enable error messages; @a 0, disable error messages. Default is 1.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> @see                    
+!> @ref RM_ErrorMessage, 
+!> @ref RM_ScreenMessage.
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> status = RM_SetErrorOn(rm_id, 1)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root.
 
+INTEGER FUNCTION RM_SetErrorOn(id, tf)
+    USE ISO_C_BINDING
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_SetErrorOn(id, tf) &
+            BIND(C, NAME='RMF_SetErrorOn')
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            INTEGER(KIND=C_INT), INTENT(in) :: tf
+        END FUNCTION RMF_SetErrorOn 
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    INTEGER, INTENT(in) :: tf
+    RM_SetErrorOn = RMF_SetErrorOn(id, tf)
+END FUNCTION RM_SetErrorOn 
 !> Set the prefix for the output (prefix.chem.txt) and log (prefix.log.txt) files.
 !> These files are opened by @ref RM_OpenFiles.
 !> @param id               The instance @a id returned from @ref RM_Create.
@@ -4343,6 +4736,140 @@ INTEGER FUNCTION RM_SetFilePrefix(id, prefix)
     CHARACTER(len=*), INTENT(in) :: prefix
     RM_SetFilePrefix = RMF_SetFilePrefix(id, trim(prefix)//C_NULL_CHAR) 
 END FUNCTION RM_SetFilePrefix  
+
+!> Use the array of concentrations (@a gas_moles) to set the moles of 
+!> gas components in each reaction cell.
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param gas_moles        Array of moles of gas components.
+!> Dimensions of the vector are (nxyz, ngas_comps), 
+!> where ngas_comps is the result of @ref RM_GetGasComponentsCount,
+!> and @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+!> If the number of moles is set to a negative number, the gas component will
+!> not be defined for the GAS_PHASE of the reaction cell.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetGasComponentsCount, 
+!> @ref RM_GetGasCompMoles,
+!> @ref RM_GetGasCompPressures,
+!> @ref RM_GetGasCompPhi,
+!> @ref RM_GetGasPhaseVolume,
+!> @ref RM_SetGasPhaseVolume.
+!> 
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> ngas_comps = RM_SetGasComponentsCount(id)
+!> allocate(gas_moles(nxyz, ngas_comps))
+!> ...
+!> status = RM_SetGasCompMoles(id, gas_moles)
+!> status = RM_RunCells(id)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_SetGasCompMoles(id, gas_moles)   
+    USE ISO_C_BINDING
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_SetGasCompMoles(id, gas_moles) &
+            BIND(C, NAME='RMF_SetGasCompMoles')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(in) :: gas_moles(*)
+        END FUNCTION RMF_SetGasCompMoles
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, DIMENSION(:,:), INTENT(in) :: gas_moles
+    if (rmf_debug) call Chk_SetGasCompMoles(id, gas_moles)
+    RM_SetGasCompMoles = RMF_SetGasCompMoles(id, gas_moles)
+END FUNCTION RM_SetGasCompMoles
+    
+SUBROUTINE Chk_SetGasCompMoles(id, gas_moles)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:,:) :: gas_moles
+    INTEGER :: errors, rmf_ngas_comps
+    errors = 0
+	rmf_ngas_comps = RM_GetGasComponentsCount(id)
+    errors = errors + Chk_Double2D(id, gas_moles, rmf_nxyz, rmf_ngas_comps, "gas moles", "RM_SetGasCompMoles")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument in RM_SetGasCompMoles")
+    endif
+END SUBROUTINE Chk_SetGasCompMoles
+
+!> Transfer volumes of gas phases from
+!> the array given in the argument list (@a gas_volume) to each reaction cell.
+!> The gas-phase volume affects the pressures calculated for fixed-volume
+!> gas phases. If a gas-phase volume is defined with this method 
+!> for a GAS_PHASE in a cell, 
+!> the gas phase is forced to be a fixed-volume gas phase.
+!> 
+!> @param id               The instance @a id returned from @ref RM_Create.
+!> @param gas_volume        Array of gas-phase volumes.
+!> Dimension of the array is (nxyz), 
+!> where @a nxyz is the number of user grid cells (@ref RM_GetGridCellCount).
+!> If an element of the array is set to a negative number, the gas component will
+!> not be defined for the GAS_PHASE of the reaction cell.
+!> @retval IRM_RESULT      0 is success, negative is failure (See @ref RM_DecodeError).
+!> @see                    
+!> @ref RM_FindComponents, 
+!> @ref RM_GetGasComponentsCount, 
+!> @ref RM_GetGasCompMoles,
+!> @ref RM_GetGasCompPressures,
+!> @ref RM_GetGasCompPhi,
+!> @ref RM_GetGasPhaseVolume,
+!> @ref RM_SetGasCompMoles.
+!> 
+!> @par Fortran Example:
+!> @htmlonly
+!> <CODE>
+!> <PRE>
+!> allocate(gas_volume(nxyz))
+!> ...
+!> status = RM_SetGasPhaseVolume(id, gas_volume)
+!> status = RM_RunCells(id)
+!> </PRE>
+!> </CODE>
+!> @endhtmlonly
+!> @par MPI:
+!> Called by root, workers must be in the loop of @ref RM_MpiWorker.
+
+INTEGER FUNCTION RM_SetGasPhaseVolume(id, gas_volume)   
+    USE ISO_C_BINDING
+    IMPLICIT NONE
+    INTERFACE
+        INTEGER(KIND=C_INT) FUNCTION RMF_SetGasPhaseVolume(id, gas_volume) &
+            BIND(C, NAME='RMF_SetGasPhaseVolume')   
+            USE ISO_C_BINDING
+            IMPLICIT NONE
+            INTEGER(KIND=C_INT), INTENT(in) :: id
+            REAL(KIND=C_DOUBLE), INTENT(in) :: gas_volume(*)
+        END FUNCTION RMF_SetGasPhaseVolume
+    END INTERFACE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, DIMENSION(:), INTENT(in) :: gas_volume
+    if (rmf_debug) call Chk_SetGasPhaseVolume(id, gas_volume)
+    RM_SetGasPhaseVolume = RMF_SetGasPhaseVolume(id, gas_volume)
+END FUNCTION RM_SetGasPhaseVolume
+    
+SUBROUTINE Chk_SetGasPhaseVolume(id, gas_volume)
+    IMPLICIT NONE
+    INTEGER, INTENT(in) :: id
+    DOUBLE PRECISION, INTENT(in), DIMENSION(:) :: gas_volume
+    INTEGER :: errors, rmf_ngas_comps
+    errors = 0
+	rmf_ngas_comps = RM_GetGasComponentsCount(id)
+    errors = errors + Chk_Double1D(id, gas_volume, rmf_nxyz, "gas volume", "RM_SetGasPhaseVolume")
+    if (errors .gt. 0) then
+        errors = RM_Abort(id, -3, "Invalid argument in RM_SetGasPhaseVolume")
+    endif
+END SUBROUTINE Chk_SetGasPhaseVolume
 
 !> MPI only. Defines a callback function that allows additional tasks to be done
 !> by the workers. The method @ref RM_MpiWorker contains a loop,
@@ -5036,6 +5563,7 @@ END FUNCTION RM_SetSelectedOutputOn
 !> @ref RM_GetSpeciesCount,
 !> @ref RM_GetSpeciesD25,
 !> @ref RM_GetSpeciesLog10Gammas,
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName, 
 !> @ref RM_GetSpeciesSaveOn, 
 !> @ref RM_GetSpeciesZ, 
@@ -5658,6 +6186,7 @@ END FUNCTION RM_SetUnitsSurface
 !> @ref RM_GetSpeciesCount, 
 !> @ref RM_GetSpeciesD25,
 !> @ref RM_GetSpeciesLog10Gammas, 
+!> @ref RM_GetSpeciesLog10Molalities,
 !> @ref RM_GetSpeciesName, 
 !> @ref RM_GetSpeciesSaveOn,
 !> @ref RM_GetSpeciesZ, 

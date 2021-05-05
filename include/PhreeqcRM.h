@@ -1,5 +1,5 @@
 /*! @file PhreeqcRM.h
-	@brief C++ Documentation
+	@brief C++ Documentation 
 */
 #if !defined(PHREEQCRM_H_INCLUDED)
 #define PHREEQCRM_H_INCLUDED
@@ -52,12 +52,17 @@ enum {
 	METHOD_GETCONCENTRATIONS,
 	METHOD_GETDENSITY,
 	METHOD_GETERRORSTRING,
+	METHOD_GETGASCOMPMOLES,
+	METHOD_GETGASCOMPPRESSURES,
+	METHOD_GETGASCOMPPHI,
+	METHOD_GETGASPHASEVOLUME,
 	METHOD_GETPRESSURE,
 	METHOD_GETSATURATION,
 	METHOD_GETSELECTEDOUTPUT,
 	METHOD_GETSOLUTIONVOLUME,
 	METHOD_GETSPECIESCONCENTRATIONS,
 	METHOD_GETSPECIESLOG10GAMMAS,
+	METHOD_GETSPECIESLOG10MOLALITIES,
 	METHOD_GETTEMPERATURE,
 	METHOD_INITIALPHREEQC2MODULE,
 	METHOD_INITIALPHREEQCCELL2MODULE,
@@ -71,6 +76,8 @@ enum {
 	METHOD_SETDENSITY,
 	METHOD_SETERRORHANDLERMODE,
 	METHOD_SETFILEPREFIX,
+	METHOD_SETGASCOMPMOLES,
+	METHOD_SETGASPHASEVOLUME,
 	METHOD_SETPARTITIONUZSOLIDS,
 	METHOD_SETPOROSITY,
 	METHOD_SETPRESSURE,
@@ -98,7 +105,7 @@ enum {
 } /* MPI_METHOD */;
 
 /**
- * @mainpage PhreeqcRM Library Documentation (3.6.2-15100)
+ * @mainpage PhreeqcRM Library Documentation (3.7.0-15749)
  *
  *  @htmlonly
  *  <table>
@@ -389,6 +396,7 @@ and their charge (@ref GetSpeciesZ).
 @ref GetSpeciesCount, 
 @ref GetSpeciesD25, 
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
@@ -396,7 +404,7 @@ and their charge (@ref GetSpeciesZ).
 @ref SetComponentH2O,
 @ref SetSpeciesSaveOn,
 @ref SpeciesConcentrations2Module. 
-@par The @ref FindComponents method also generates lists of reactants--equilibrium phases,
+@par The FindComponents method also generates lists of reactants--equilibrium phases,
 exchangers, gas components, kinetic reactants, solid solution components, and surfaces. 
 The lists are cumulative, including all reactants that were
 defined in the initial phreeqc instance at any time FindComponents was called.
@@ -959,6 +967,142 @@ oss << "    " << gas_phases[i] << "\n";
 Called by root.
 */
 int                                       GetGasComponentsCount(void) const { return (int) this->GasComponentsList.size(); }
+
+/**
+Transfer moles of gas components from each reaction cell
+to the vector given in the argument list (@a gas_moles).
+
+@param  gas_moles               Vector to receive the moles of gas components.
+Dimension of the vector is set to @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref GetGridCellCount).
+If a gas component is not defined for a cell, the number of moles is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+@see                    
+@ref FindComponents, 
+@ref GetGasComponentsCount, 
+@ref GetGasCompPressures,
+@ref GetGasCompPhi,
+@ref GetGasPhaseVolume,
+@ref SetGasCompMoles,
+@ref SetGasPhaseVolume.
+@par C++ Example:
+@htmlonly
+<CODE>
+<PRE>
+std::vector<double> gas_moles;
+status = phreeqc_rm.RunCells();
+status = phreeqc_rm.GetGasCompMoles(gas_moles);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref MpiWorker.
+ */
+IRM_RESULT                                GetGasCompMoles(std::vector<double>& gas_moles);
+
+/**
+Transfer pressures of gas components from each reaction cell
+to the vector given in the argument list (@a gas_pressure).
+
+@param  gas_pressure               Vector to receive the pressures of gas components.
+Dimension of the vector is set to @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref GetGridCellCount).
+If a gas component is not defined for a cell, the pressure is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+@see                    
+@ref FindComponents, 
+@ref GetGasComponentsCount, 
+@ref GetGasCompMoles,
+@ref GetGasCompPhi,
+@ref GetGasPhaseVolume,
+@ref SetGasCompMoles,
+@ref SetGasPhaseVolume.
+@par C++ Example:
+@htmlonly
+<CODE>
+<PRE>
+std::vector<double> gas_pressure;
+status = phreeqc_rm.RunCells();
+status = phreeqc_rm.GetGasCompPressures(gas_pressure);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref MpiWorker.
+ */
+IRM_RESULT                                GetGasCompPressures(std::vector<double>& gas_pressure);
+
+/**
+Transfer fugacity coefficients (phi) of gas components from each reaction cell
+to the vector given in the argument list (@a gas_phi). Fugacity is
+equal to the gas component pressure times the fugacity coefficient.
+
+@param  gas_phi               Vector to receive the fugacity coefficients of gas components.
+Dimension of the vector is set to @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref GetGridCellCount).
+If a gas component is not defined for a cell, the fugacity coefficient is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+@see
+@ref FindComponents,
+@ref GetGasComponentsCount,
+@ref GetGasCompMoles,
+@ref GetGasCompPressures,
+@ref GetGasPhaseVolume,
+@ref SetGasCompMoles,
+@ref SetGasPhaseVolume.
+@par C++ Example:
+@htmlonly
+<CODE>
+<PRE>
+std::vector<double> gas_phi;
+status = phreeqc_rm.RunCells();
+status = phreeqc_rm.GetGasCompPhi(gas_phi);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref MpiWorker.
+ */
+IRM_RESULT                                GetGasCompPhi(std::vector<double>& gas_phi);
+
+/**
+Transfer volume of gas phase from each reaction cell
+to the vector given in the argument list (@a gas_volume). 
+
+@param  gas_volume               Vector to receive the gas phase volumes.
+Dimension of the vector is set to @a nxyz,
+where,  @a nxyz is the number of user grid cells (@ref GetGridCellCount).
+If a gas phase is not defined for a cell, the volume is set to -1.
+Values for inactive cells are set to 1e30.
+@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+@see
+@ref FindComponents,
+@ref GetGasComponentsCount,
+@ref GetGasCompMoles,
+@ref GetGasCompPressures,
+@ref GetGasCompPhi,
+@ref SetGasCompMoles,
+@ref SetGasPhaseVolume.
+@par C++ Example:
+@htmlonly
+<CODE>
+<PRE>
+std::vector<double> gas_volume;
+status = phreeqc_rm.RunCells();
+status = phreeqc_rm.GetGasPhaseVolume(gas_volume);
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref MpiWorker.
+ */
+IRM_RESULT                                GetGasPhaseVolume(std::vector<double>& gas_volume);
 
 /**
 Returns a reference to a vector of doubles that contains the gram-formula weight of
@@ -1800,6 +1944,7 @@ Values for inactive cells are set to 1e30.
 @ref GetSpeciesCount, 
 @ref GetSpeciesD25, 
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
@@ -1835,6 +1980,7 @@ aqueous species that can be made from the set of components.
 @ref GetSpeciesConcentrations, 
 @ref GetSpeciesD25, 
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
@@ -1868,6 +2014,7 @@ where @a nspecies is the number of aqueous species (@ref GetSpeciesCount).
 @ref GetSpeciesConcentrations, 
 @ref GetSpeciesCount,
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
@@ -1906,6 +2053,7 @@ Called by root and (or) workers.
     @ref GetSpeciesConcentrations, 
 	@ref GetSpeciesCount,
 	@ref GetSpeciesD25,
+    @ref GetSpeciesLog10Molalities,
 	@ref GetSpeciesNames,
 	@ref GetSpeciesSaveOn,
 	@ref GetSpeciesStoichiometry,
@@ -1929,8 +2077,50 @@ Called by root and (or) workers.
 	@par MPI:
 	Called by root, workers must be in the loop of @ref MpiWorker.
 	*/
-	IRM_RESULT                                GetSpeciesLog10Gammas(std::vector<double> & species_log10gammas);
-	
+	IRM_RESULT                                GetSpeciesLog10Gammas(std::vector<double> & species_log10gammas);	
+
+	/**
+	Returns a vector reference to log10 aqueous species molalities (@a species_log10molalities).
+	To use this method @ref SetSpeciesSaveOn must be set to @a true.
+	The list of aqueous species is determined by @ref FindComponents and includes all
+	aqueous species that can be made from the set of components.
+
+	@param species_log10molalities     Vector to receive the log10 aqueous species molalites.
+	Dimension of the vector is set to @a nspecies times @a nxyz,
+	where @a nspecies is the number of aqueous species (@ref GetSpeciesCount),
+	and @a nxyz is the number of grid cells (@ref GetGridCellCount).
+	Values for inactive cells are set to 1e30.
+	@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+	@see                    @ref FindComponents
+	@ref GetSpeciesConcentrations,
+	@ref GetSpeciesCount,
+	@ref GetSpeciesD25,
+	@ref GetSpeciesLog10Gammas,
+	@ref GetSpeciesNames,
+	@ref GetSpeciesSaveOn,
+	@ref GetSpeciesStoichiometry,
+	@ref GetSpeciesZ,
+	@ref SetSpeciesSaveOn,
+	@ref SpeciesConcentrations2Module.
+
+	@par C++ Example:
+	@htmlonly
+	<CODE>
+	<PRE>
+	status = phreeqc_rm.SetSpeciesSaveOn(true);
+	int ncomps = phreeqc_rm.FindComponents();
+	int npecies = phreeqc_rm.GetSpeciesCount();
+	status = phreeqc_rm.RunCells();
+	std::vector<double> species_molalities;
+	status = phreeqc_rm.GetSpeciesLog10Molalities(species_molalities);
+	</PRE>
+	</CODE>
+	@endhtmlonly
+	@par MPI:
+	Called by root, workers must be in the loop of @ref MpiWorker.
+	*/
+	IRM_RESULT                                GetSpeciesLog10Molalities(std::vector<double>& species_log10molalities);	/**
+
 	/**
 Returns a vector reference to the names of the aqueous species.
 This method is intended for use with multicomponent-diffusion transport calculations,
@@ -1944,6 +2134,7 @@ where @a nspecies is the number of aqueous species (@ref GetSpeciesCount).
 @ref GetSpeciesCount,
 @ref GetSpeciesD25, 
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
 @ref GetSpeciesZ,
@@ -1981,6 +2172,7 @@ with @ref GetSpeciesConcentrations, and solution compositions to be set with
 @ref GetSpeciesCount,
 @ref GetSpeciesD25,
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesStoichiometry, 
 @ref GetSpeciesZ,
@@ -2015,6 +2207,7 @@ where @a nspecies is the number of aqueous species (@ref GetSpeciesCount).
 @ref GetSpeciesCount,
 @ref GetSpeciesD25,
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesZ,
@@ -2062,6 +2255,7 @@ where @a nspecies is the number of aqueous species (@ref GetSpeciesCount).
 @ref GetSpeciesCount,
 @ref GetSpeciesD25,
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
@@ -3350,6 +3544,26 @@ status = phreeqc_rm.SetErrorHandlerMode(1);
 Called by root, workers must be in the loop of @ref MpiWorker.
  */
 	IRM_RESULT                                SetErrorHandlerMode(int mode);
+	/**
+	Set the property that controls whether error messages are generated and displayed.
+	Messages include PHREEQC "ERROR" messages, and
+	any messages written with @ref ErrorMessage.
+
+	@param tf  @a True, enable error messages; @a False, disable error messages. Default is true.
+	@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+	@see                    @ref ErrorMessage, @ref ScreenMessage.
+	@par C++ Example:
+	@htmlonly
+	<CODE>
+	<PRE>
+	status = phreeqc_rm.SetErrorOn(true);
+	</PRE>
+	</CODE>
+	@endhtmlonly
+	@par MPI:
+	Called by root.
+	 */
+	IRM_RESULT                                SetErrorOn(bool tf);
 /**
 Set the prefix for the output (prefix.chem.txt) and log (prefix.log.txt) files.
 These files are opened by @ref OpenFiles.
@@ -3369,6 +3583,83 @@ phreeqc_rm.OpenFiles();
 Called by root.
  */
 	IRM_RESULT                                SetFilePrefix(const std::string & prefix);
+
+/**
+Transfer moles of gas components from
+the vector given in the argument list (@a gas_moles) to each reaction cell.
+
+@param  gas_moles               Vector of moles of gas components.
+Dimension of the vector is set to @a ngas_comps times @a nxyz,
+where, @a ngas_comps is the result of @ref GetGasComponentsCount,
+and @a nxyz is the number of user grid cells (@ref GetGridCellCount).
+If the number of moles is set to a negative number, the gas component will
+not be defined for the GAS_PHASE of the reaction cell.
+
+@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+@see                    
+@ref FindComponents, 
+@ref GetGasComponentsCount, 
+@ref GetGasCompMoles,
+@ref GetGasCompPressures,
+@ref GetGasPhaseVolume,
+@ref GetGasCompPhi,
+@ref SetGasPhaseVolume.
+@par C++ Example:
+@htmlonly
+<CODE>
+<PRE>
+std::vector<double> gas_moles;
+gas_moles.resize(nxyz*ngas);
+...
+status = phreeqc_rm.SetGasCompMoles(gas_moles);
+status = phreeqc_rm.RunCells();
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref MpiWorker.
+	*/
+IRM_RESULT                                SetGasCompMoles(const std::vector<double>& gas_moles);
+/**
+Transfer volumes of gas phases from
+the vector given in the argument list (@a gas_volume) to each reaction cell.
+The gas-phase volume affects the gas-component pressures calculated for fixed-volume
+gas phases. If a gas-phase volume is defined with this methood 
+for a GAS_PHASE in a cell, 
+the gas phase is forced to be a fixed-volume gas phase.
+
+@param  gas_volume               Vector of volumes for each gas phase.
+Dimension of the vector is @a nxyz,
+where @a nxyz is the number of user grid cells (@ref GetGridCellCount).
+If the volume is set to a negative number for a cell, the gas-phase volume for that cell is
+not changed.
+
+@retval IRM_RESULT      0 is success, negative is failure (See @ref DecodeError).
+@see
+@ref FindComponents,
+@ref GetGasComponentsCount,
+@ref GetGasCompMoles,
+@ref GetGasCompPressures,
+@ref GetGasCompPhi,
+@ref GetGasPhaseVolume,
+@ref SetGasCompMoles.
+@par C++ Example:
+@htmlonly
+<CODE>
+<PRE>
+std::vector<double> gas_volume;
+gas_volume.resize(nxyz, -1.0);
+...
+status = phreeqc_rm.SetGasPhaseVolume(gas_volume);
+status = phreeqc_rm.RunCells();
+</PRE>
+</CODE>
+@endhtmlonly
+@par MPI:
+Called by root, workers must be in the loop of @ref MpiWorker.
+	*/
+IRM_RESULT                                SetGasPhaseVolume(const std::vector<double>& gas_volume);
+
 /**
 MPI and C/C++ only. Defines a callback function that allows additional tasks to be done
 by the workers. The method @ref MpiWorker contains a loop,
@@ -3859,6 +4150,7 @@ with @ref GetSpeciesConcentrations, and solution compositions to be set with
 @ref GetSpeciesCount,
 @ref GetSpeciesD25,
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
@@ -4247,6 +4539,7 @@ Concentrations are moles per liter.
 @ref GetSpeciesCount,
 @ref GetSpeciesD25,
 @ref GetSpeciesLog10Gammas, 
+@ref GetSpeciesLog10Molalities,
 @ref GetSpeciesNames, 
 @ref GetSpeciesSaveOn, 
 @ref GetSpeciesStoichiometry, 
